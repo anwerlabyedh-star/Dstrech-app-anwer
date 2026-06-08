@@ -1,0 +1,17 @@
+{
+  "short_name": "DStretch Pro",
+  "name": "DStretch Rock Art Enhancer Pro",
+  "icons": [
+    {
+      "src": "https://flaticon.com",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": ".",
+  "background_color": "#121212",
+  "theme-color": "#1e1e1e",
+  "display": "standalone",
+  "orientation": "portrait"
+}
