@@ -70,12 +70,11 @@
 
   .btn-action { width: 100%; padding: 0.8rem; border: none; border-radius: 8px; font-family: 'Cairo', sans-serif; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: all 0.2s; margin-top: 5px; }
   .btn-primary { background: var(--accent); color: #000; }
-  .btn-install { background: #4CAF50; color: white; display: none; margin-bottom: 10px; }
 
-  .upload-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 1.5rem; text-align: center; cursor: pointer; background: var(--surface); margin-bottom: 15px; }
+  .upload-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 1.5rem; text-align: center; cursor: pointer; background: var(--surface); margin-bottom: 5px; }
   .upload-icon { font-size: 2rem; margin-bottom: 0.3rem; }
   
-  .canvas-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; display: none; margin-top: 10px; }
+  .canvas-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-top: 10px; }
   .canvas-label { padding: 0.5rem 1rem; font-size: 0.8rem; color: var(--text-dim); border-bottom: 1px solid var(--border); text-align: right; }
   canvas { display: block; width: 100%; max-height: 350px; object-fit: contain; background: #000; }
   #fileInput { display: none; }
@@ -89,12 +88,11 @@
 </header>
 
 <div class="main">
-  <button id="installBtn" class="btn-action btn-install">⬇️ تثبيت التطبيق على الهاتف</button>
-
   <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
     <div class="upload-icon">📁</div>
-    <div class="drop-zone-text">اضغط هنا لاختيار صورة النقوش الأثرية</div>
+    <div class="drop-zone-text" id="statusText">اضغط هنا لاختيار صورة من الاستوديو أو الكاميرا</div>
   </div>
+  <!-- تعديل مهم لقبول الكاميرا والملفات في الأندرويد بسلاسة -->
   <input type="file" id="fileInput" accept="image/*">
 
   <div class="card">
@@ -131,10 +129,10 @@
     </div>
   </div>
 
-  <div class="canvas-panel" id="canvasPanel">
+  <div class="canvas-panel">
     <div class="canvas-label">النتيجة المعالجة بدستريتش:</div>
     <canvas id="outCanvas"></canvas>
-    <button class="btn-action btn-primary" onclick="downloadImg()">⬇️ تحميل النتيجة</button>
+    <button class="btn-action btn-primary" onclick="downloadImg()">⬇️ تحميل وتنزيل النتيجة</button>
   </div>
 </div>
 
@@ -143,15 +141,20 @@ let imgElement = new Image();
 let curFilter = 'none';
 
 document.getElementById('fileInput').onchange = function(e) {
-  if (e.target.files && e.target.files) {
+  if (e.target.files && e.target.files[0]) {
+    document.getElementById('statusText').textContent = "جاري تحميل الصورة...";
+    let file = e.target.files[0];
     let reader = new FileReader();
-    reader.onload = function(event) { imgElement.src = event.target.result; }
-    reader.readAsDataURL(e.target.files);
+    
+    reader.onload = function(event) {
+      imgElement.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
   }
 };
 
 imgElement.onload = function() {
-  document.getElementById('canvasPanel').style.display = 'block';
+  document.getElementById('statusText').textContent = "تمت إضافة الصورة بنجاح ✅";
   reapply();
 };
 
@@ -166,63 +169,63 @@ function reapply() {
   if (!imgElement.src) return;
   let canvas = document.getElementById('outCanvas');
   let ctx = canvas.getContext('2d');
-  let maxDim = 800; 
+  
+  // تصغير الحجم البرمجي لـ 600 بكسل لتفادي أي ثقل أو كراش في نظام الأندرويد
+  let maxDim = 600; 
   let w = imgElement.width, h = imgElement.height;
   if (w > maxDim || h > maxDim) {
     if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; } else { w = Math.round((w * maxDim) / h); h = maxDim; }
   }
+  
   canvas.width = w; canvas.height = h;
+  ctx.clearRect(0, 0, w, h);
   ctx.drawImage(imgElement, 0, 0, w, h);
   
-  let imgData = ctx.getImageData(0, 0, w, h);
-  let src = imgData.data, n = src.length;
-  let dst = new Uint8ClampedArray(n);
-  
-  let stretch = parseFloat(document.getElementById('sl-stretch').value);
-  let brightness = parseFloat(document.getElementById('sl-brightness').value);
-  let contrast = parseFloat(document.getElementById('sl-contrast').value);
-  let sharp = parseFloat(document.getElementById('sl-sharp').value);
+  try {
+    let imgData = ctx.getImageData(0, 0, w, h);
+    let src = imgData.data, n = src.length;
+    let dst = new Uint8ClampedArray(n);
+    
+    let stretch = parseFloat(document.getElementById('sl-stretch').value);
+    let brightness = parseFloat(document.getElementById('sl-brightness').value);
+    let contrast = parseFloat(document.getElementById('sl-contrast').value);
+    let sharp = parseFloat(document.getElementById('sl-sharp').value);
 
-  let stats = {r:0, g:0, b:0};
-  for(let i=0; i<n; i+=4) { stats.r += src[i]; stats.g += src[i+1]; stats.b += src[i+2]; }
-  let count = n/4, avg = {r: stats.r/count, g: stats.g/count, b: stats.b/count};
+    let stats = {r:0, g:0, b:0};
+    for(let i=0; i<n; i+=4) { stats.r += src[i]; stats.g += src[i+1]; stats.b += src[i+2]; }
+    let count = n/4, avg = {r: stats.r/count, g: stats.g/count, b: stats.b/count};
 
-  for(let i=0; i<n; i+=4) {
-    let r = src[i], g = src[i+1], b = src[i+2];
-    let nr = r, ng = g, nb = b;
+    for(let i=0; i<n; i+=4) {
+      let r = src[i], g = src[i+1], b = src[i+2];
+      let nr = r, ng = g, nb = b;
 
-    if (curFilter === 'lgr') {
-      nr = b * 1.6 - r * 0.6; ng = r * 1.6 - g * 0.6; nb = g * 1.6 - b * 0.6;
-    } else if (curFilter === 'lrd') {
-      nr = r * 2.0 - g * 0.7 - b * 0.3; ng = g; nb = b;
-    } else if (curFilter === 'lre') {
-      nr = r * 1.6 - g * 0.6; ng = g * 1.4 - r * 0.4; nb = b;
-    } else if (curFilter === 'yrd') {
-      nr = r * 1.7 - g * 0.5 - b * 0.2; ng = -r * 0.1 + g * 1.3; nb = b * 1.4;
-    } else if (curFilter === 'yre') {
-      nr = r * 1.4 - b * 0.4; ng = g * 1.4 - b * 0.4; nb = b * 0.8;
-    } else if (curFilter === 'lds') {
-      nr = r * 1.5; ng = g * 0.8; nb = b * 0.5;
-    } else if (curFilter === 'ycbcr') {
-      let cr = 0.5 * r - 0.418 * g - 0.081 * b + 128;
-      nr = cr; ng = cr; nb = cr;
+      if (curFilter === 'lgr') {
+        nr = b * 1.6 - r * 0.6; ng = r * 1.6 - g * 0.6; nb = g * 1.6 - b * 0.6;
+      } else if (curFilter === 'lrd') {
+        nr = r * 2.0 - g * 0.7 - b * 0.3; ng = g; nb = b;
+      } else if (curFilter === 'lre') {
+        nr = r * 1.6 - g * 0.6; ng = g * 1.4 - r * 0.4; nb = b;
+      } else if (curFilter === 'yrd') {
+        nr = r * 1.7 - g * 0.5 - b * 0.2; ng = -r * 0.1 + g * 1.3; nb = b * 1.4;
+      } else if (curFilter === 'yre') {
+        nr = r * 1.4 - b * 0.4; ng = g * 1.4 - b * 0.4; nb = b * 0.8;
+      } else if (curFilter === 'lds') {
+        nr = r * 1.5; ng = g * 0.8; nb = b * 0.5;
+      } else if (curFilter === 'ycbcr') {
+        let cr = 0.5 * r - 0.418 * g - 0.081 * b + 128;
+        nr = cr; ng = cr; nb = cr;
+      }
+
+      let finalR = ((nr - avg.r) * stretch + avg.r) * brightness;
+      let finalG = ((ng - avg.g) * stretch + avg.g) * brightness;
+      let finalB = ((nb - avg.b) * stretch + avg.b) * brightness;
+
+      finalR = (finalR - 128) * contrast + 128;
+      finalG = (finalG - 128) * contrast + 128;
+      finalB = (finalB - 128) * contrast + 128;
+
+      dst[i]   = Math.min(255, Math.max(0, finalR * sharp));
+      dst[i+1] = Math.min(255, Math.max(0, finalG * sharp));
+      dst[i+2] = Math.min(255, Math.max(0, finalB * sharp));
+      dst[i+3] = 255;
     }
-
-    let finalR = ((nr - avg.r) * stretch + avg.r) * brightness;
-    let finalG = ((ng - avg.g) * stretch + avg.g) * brightness;
-    let finalB = ((nb - avg.b) * stretch + avg.b) * brightness;
-
-    finalR = (finalR - 128) * contrast + 128;
-    finalG = (finalG - 128) * contrast + 128;
-    finalB = (finalB - 128) * contrast + 128;
-
-    dst[i]   = Math.min(255, Math.max(0, finalR * sharp));
-    dst[i+1] = Math.min(255, Math.max(0, finalG * sharp));
-    dst[i+2] = Math.min(255, Math.max(0, finalB * sharp));
-    dst[i+3] = 255;
-  }
-  ctx.putImageData(new ImageData(dst, w, h), 0, 0);
-}
-
-function downloadImg() {
-  let link = document.createElement('a'); link.download = 'dstretch_result.png';
