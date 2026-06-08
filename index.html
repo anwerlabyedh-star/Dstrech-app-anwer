@@ -10,7 +10,7 @@
         .container { max-width: 500px; margin: auto; background: #1e1e1e; padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
         input[type="file"], select, input[type="range"] { width: 100%; padding: 10px; margin: 10px 0; border-radius: 6px; border: none; box-sizing: border-box; }
         select { background: #333; color: white; font-size: 1rem; }
-        canvas { max-width: 100%; height: auto; margin-top: 15px; border-radius: 8px; background: #000; }
+        canvas { max-width: 100%; height: auto; margin-top: 15px; border-radius: 8px; background: #000; display: block; margin-left: auto; margin-right: auto; }
         button { background: #ff9800; color: #000; border: none; padding: 12px; width: 100%; border-radius: 6px; font-weight: bold; font-size: 1rem; cursor: pointer; margin-top: 10px; }
         label { display: block; text-align: right; font-size: 0.9rem; color: #bbb; }
     </style>
@@ -45,36 +45,48 @@ let imgElement = new Image();
 let curFilter = 'none';
 
 document.getElementById('upload').onchange = function(e) {
-    let reader = new FileReader();
-    reader.onload = function(event) {
-        imgElement.src = event.target.result;
+    if (e.target.files && e.target.files[0]) {
+        let reader = new FileReader();
+        reader.onload = function(event) {
+            imgElement.src = event.target.result;
+        }
+        reader.readAsDataURL(e.target.files[0]);
     }
-    reader.readAsDataURL(e.target.files);
 };
 
+// هنا التعديل المهم: نضمن أن الصورة تحملت بالكامل قبل المعالجة والـ Rendering
 imgElement.onload = function() {
     applyFilter(curFilter);
 };
 
 document.getElementById('filterSelect').onchange = function(e) {
     curFilter = e.target.value;
-    if(imgElement.src) applyFilter(curFilter);
+    if(imgElement.src && imgElement.complete) applyFilter(curFilter);
 };
 
 document.getElementById('stretch').oninput = function(e) {
     document.getElementById('stretchLabel').innerText = `قوة التمديد والتباين: ${e.target.value}`;
-    if(imgElement.src) applyFilter(curFilter);
+    if(imgElement.src && imgElement.complete) applyFilter(curFilter);
 };
 
 function applyFilter(name) {
     let canvas = document.getElementById('out');
     let outCtx = canvas.getContext('2d');
     
-    canvas.width = imgElement.width;
-    canvas.height = imgElement.height;
-    outCtx.drawImage(imgElement, 0, 0);
+    // تصغير الحجم البرمجي في المتصفح لتجنب كراش الذاكرة في الهواتف
+    let maxDim = 1200;
+    let w = imgElement.width;
+    let h = imgElement.height;
+    if (w > maxDim || h > maxDim) {
+        if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; } 
+        else { w = Math.round((w * maxDim) / h); h = maxDim; }
+    }
     
-    let imgData = outCtx.getImageData(0, 0, canvas.width, canvas.height);
+    canvas.width = w;
+    canvas.height = h;
+    outCtx.drawImage(imgElement, 0, 0, w, h);
+    
+    let imgData = outCtx.getImageData(0, 0, w, h);
     let src = imgData.data;
     let n = src.length;
     let dst = new Uint8ClampedArray(n);
@@ -105,8 +117,8 @@ function applyFilter(name) {
             ng = g * 1.3 - b * 0.3;
             nb = -r * 0.2 - g * 0.2 + b * 1.4;
         } else if (name === 'lab_l') {
-            let column = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-            nr = column; ng = column; nb = column;
+            let luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+            nr = luminance; ng = luminance; nb = luminance;
         } else if(name === 'lds') {
             nr = r * 1.5; ng = g * 0.8; nb = b * 0.5;
         } else {
@@ -119,13 +131,13 @@ function applyFilter(name) {
         dst[i+3] = 255;
     }
 
-    outCtx.putImageData(new ImageData(dst, canvas.width, canvas.height), 0, 0);
+    outCtx.putImageData(new ImageData(dst, w, h), 0, 0);
 }
 
 function download() {
     let link = document.createElement('a');
     link.download = 'dstretch_enhanced.png';
-    link.href = document.getElementById('out').toDataURL();
+    link.href = document.getElementById('out').toDataURL('image/png');
     link.click();
 }
 </script>
