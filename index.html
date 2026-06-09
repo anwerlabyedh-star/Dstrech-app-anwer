@@ -1,158 +1,665 @@
+cat > /mnt/user-data/outputs/dstretch_pca.html << 'HTMLEOF'
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DStretch Pro - محسّن الرسوم الصخرية</title>
+<title>DStretch — PCA Decorrelation Stretch</title>
 <style>
-  @import url('https://googleapis.com');
-  :root { --bg: #0a0c0f; --surface: #12151a; --surface2: #1a1f28; --border: #2a3040; --accent: #c8a84b; --text: #e8e2d4; --text-dim: #8a8070; }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: var(--bg); color: var(--text); font-family: 'Cairo', sans-serif; min-height: 100vh; display: flex; flex-direction: column; }
-  header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); background: var(--surface); text-align: center; }
-  .logo { font-size: 1.4rem; font-weight: 700; color: var(--accent); letter-spacing: 2px; }
-  .subtitle { font-size: 0.8rem; color: var(--text-dim); }
-  .main { padding: 15px; display: flex; flex-direction: column; gap: 15px; flex: 1; }
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 15px; }
-  .section-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 0.3rem; margin-bottom: 0.8rem; text-align: right; }
-  .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-  .filter-btn { padding: 0.7rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: 'Cairo', sans-serif; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; font-weight: 600; }
-  .filter-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
-  .slider-group { margin-bottom: 0.8rem; }
-  .slider-label { display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-dim); margin-bottom: 4px; }
-  .slider-val { color: var(--accent); font-weight: 600; }
-  input[type=range] { width: 100%; -webkit-appearance: none; height: 6px; background: var(--border); border-radius: 3px; outline: none; }
-  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--accent); cursor: pointer; }
-  .btn-action { width: 100%; padding: 0.8rem; border: none; border-radius: 8px; font-family: 'Cairo', sans-serif; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: all 0.2s; margin-top: 5px; }
-  .btn-primary { background: var(--accent); color: #000; }
-  .upload-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 1.5rem; text-align: center; cursor: pointer; background: var(--surface); margin-bottom: 5px; }
-  .canvas-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-top: 10px; }
-  canvas { display: block; width: 100%; max-height: 350px; object-fit: contain; background: #000; }
-  #fileInput { display: none; }
+  @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap');
+  :root{
+    --bg:#0a0c0f;--surface:#12151a;--surface2:#1c2028;--border:#252b38;
+    --accent:#c8a84b;--text:#e8e2d4;--dim:#7a7468;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Cairo',sans-serif;
+       height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+  header{padding:.7rem 1.5rem;border-bottom:1px solid var(--border);
+         background:var(--surface);display:flex;align-items:center;gap:10px;flex-shrink:0;}
+  .logo{font-size:1.2rem;font-weight:700;color:var(--accent);letter-spacing:2px;}
+  .badge{background:linear-gradient(135deg,#c8a84b,#e8c870);color:#000;
+         font-size:.55rem;font-weight:800;padding:2px 7px;border-radius:3px;letter-spacing:1px;}
+  .sub{font-size:.7rem;color:var(--dim);margin-right:auto;}
+
+  .layout{display:grid;grid-template-columns:270px 1fr;flex:1;min-height:0;overflow:hidden;}
+
+  /* SIDEBAR */
+  .sb{background:var(--surface);border-left:1px solid var(--border);
+      padding:.8rem;display:flex;flex-direction:column;gap:.8rem;overflow-y:auto;}
+  .sec{border-bottom:1px solid var(--border);padding-bottom:.75rem;}
+  .st{font-size:.58rem;text-transform:uppercase;letter-spacing:2px;
+      color:var(--accent);margin-bottom:.55rem;}
+
+  /* COLORSPACE TABS */
+  .cstabs{display:grid;grid-template-columns:repeat(3,1fr);gap:.25rem;margin-bottom:.35rem;}
+  .cst{padding:.42rem .2rem;border-radius:5px;border:1px solid var(--border);
+       background:var(--surface2);font-family:'Cairo',sans-serif;font-size:.65rem;
+       font-weight:600;color:var(--dim);cursor:pointer;text-align:center;
+       transition:all .15s;line-height:1.35;}
+  .cst.on{background:var(--accent);color:#000;border-color:var(--accent);}
+
+  /* PRESET BUTTONS — the named DStretch filters */
+  .pgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.28rem;}
+  .pb{padding:.42rem .25rem;border-radius:5px;border:1px solid var(--border);
+      background:var(--surface2);font-family:'Cairo',sans-serif;font-size:.65rem;
+      font-weight:700;color:var(--text);cursor:pointer;text-align:center;
+      transition:all .15s;line-height:1.3;}
+  .pb:hover{transform:translateY(-1px);}
+  .pb.on{border-width:2px;color:#000;}
+
+  /* SLIDERS */
+  .sr{margin-bottom:.55rem;}
+  .sl{display:flex;justify-content:space-between;font-size:.7rem;color:var(--dim);margin-bottom:3px;}
+  .sv{color:var(--accent);font-weight:700;}
+  input[type=range]{width:100%;-webkit-appearance:none;height:3px;
+    background:var(--border);border-radius:2px;outline:none;cursor:pointer;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;
+    border-radius:50%;background:var(--accent);cursor:pointer;}
+
+  .btn{width:100%;padding:.58rem;border:none;border-radius:6px;
+       font-family:'Cairo',sans-serif;font-size:.8rem;font-weight:700;
+       cursor:pointer;transition:all .2s;margin-bottom:.3rem;}
+  .bdl{background:var(--accent);color:#000;}
+  .bdl:hover{background:#d9b95c;}
+  .brst{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+
+  /* INFO BOX */
+  .info{font-size:.63rem;color:var(--dim);line-height:1.7;padding:.38rem .45rem;
+        background:var(--surface2);border-radius:4px;border-right:2px solid var(--accent);}
+
+  /* COV MATRIX DISPLAY */
+  .cov-box{font-size:.6rem;color:var(--dim);font-family:monospace;
+           background:#0d1117;border:1px solid var(--border);border-radius:4px;
+           padding:.4rem;line-height:1.8;overflow-x:auto;white-space:pre;}
+
+  /* CANVAS */
+  .ca{display:flex;flex-direction:column;padding:.8rem;gap:.65rem;overflow:hidden;}
+  .dz{flex:1;border:2px dashed var(--border);border-radius:10px;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      cursor:pointer;transition:all .3s;background:var(--surface);min-height:200px;}
+  .dz:hover{border-color:var(--accent);background:var(--surface2);}
+  .canvases{display:none;grid-template-columns:1fr 1fr;gap:.65rem;flex:1;min-height:0;}
+  .cp{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+      overflow:hidden;display:flex;flex-direction:column;min-height:0;}
+  .cl{padding:.38rem .7rem;font-size:.63rem;color:var(--dim);text-transform:uppercase;
+      letter-spacing:1px;border-bottom:1px solid var(--border);
+      display:flex;justify-content:space-between;flex-shrink:0;}
+  .cl .an{color:var(--accent);font-weight:700;}
+  canvas{display:block;width:100%;flex:1;min-height:0;object-fit:contain;}
+  .stat{padding:.3rem .7rem;background:var(--surface);border:1px solid var(--border);
+        border-radius:5px;font-size:.63rem;color:var(--dim);
+        display:flex;gap:1rem;flex-shrink:0;flex-wrap:wrap;}
+  .stat b{color:var(--accent);}
+  #fi{display:none;}
 </style>
 </head>
 <body>
 <header>
-  <div class="logo">⬡ DStretch Pro</div>
-  <div class="subtitle">محسّن الرسوم الصخرية — تقنية تمديد التباين اللوني</div>
+  <div class="logo">⬡ DStretch</div>
+  <span class="badge">PCA</span>
+  <div class="sub">Covariance Matrix → PCA → Decorrelation Stretch الحقيقي</div>
 </header>
-<div class="main">
-  <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
-    <div style="font-size:2rem;">📁</div>
-    <div id="statusText">اضغط هنا لاختيار صورة من الاستوديو</div>
-  </div>
-  <input type="file" id="fileInput" accept="image/*">
 
-  <div class="card">
-    <div class="section-title">قنوات DStretch</div>
-    <div class="filter-grid">
-      <button class="filter-btn active" onclick="setFilter('none', this)">الأصلي</button>
-      <button class="filter-btn" onclick="setFilter('lgr', this)">LGR (أزرق/أحمر)</button>
-      <button class="filter-btn" onclick="setFilter('lrd', this)">LRD (باهت)</button>
-      <button class="filter-btn" onclick="setFilter('lre', this)">LRE (مغرة)</button>
-      <button class="filter-btn" onclick="setFilter('yrd', this)">YRD (أحمر Pro)</button>
-      <button class="filter-btn" onclick="setFilter('yre', this)">YRE (أصفر Pro)</button>
-      <button class="filter-btn" onclick="setFilter('lds', this)">LDS (حاد)</button>
-      <button class="filter-btn" onclick="setFilter('ycbcr', this)">YCbCr Cr</button>
+<div class="layout">
+<div class="sb">
+
+  <!-- COLOR SPACE -->
+  <div class="sec">
+    <div class="st">① فضاء الألوان للعمل فيه</div>
+    <div class="cstabs">
+      <button class="cst on" id="cs-rgb"    onclick="setCS('rgb')">RGB</button>
+      <button class="cst"    id="cs-ycbcr"  onclick="setCS('ycbcr')">YCbCr</button>
+      <button class="cst"    id="cs-lab"    onclick="setCS('lab')">Lab</button>
+    </div>
+    <div class="info" id="cs-info">
+      PCA مباشرة على RGB — مطابق لـ CRGB في DStretch الأصلي.
     </div>
   </div>
 
-  <div class="card">
-    <div class="section-title">إعدادات التحسين</div>
-    <div class="slider-group">
-      <div class="slider-label"><span>قوة التمديد</span><span class="slider-val" id="val-stretch">2.0</span></div>
-      <input type="range" id="sl-stretch" min="1" max="5" step="0.1" value="2.0" oninput="document.getElementById('val-stretch').textContent=this.value; reapply()">
-    </div>
-    <div class="slider-group">
-      <div class="slider-label"><span>السطوع</span><span class="slider-val" id="val-brightness">1.00</span></div>
-      <input type="range" id="sl-brightness" min="0.5" max="2" step="0.05" value="1.00" oninput="document.getElementById('val-brightness').textContent=parseFloat(this.value).toFixed(2); reapply()">
+  <!-- NAMED PRESETS (DStretch original filter names) -->
+  <div class="sec">
+    <div class="st">② فلاتر DStretch الأصلية</div>
+    <div class="pgrid">
+      <button class="pb" id="pb-YRE" onclick="applyPreset('YRE')"  style="background:#3a1a08">YRE</button>
+      <button class="pb" id="pb-YRD" onclick="applyPreset('YRD')"  style="background:#081a3a">YRD</button>
+      <button class="pb" id="pb-YBK" onclick="applyPreset('YBK')"  style="background:#1a0808">YBK</button>
+      <button class="pb" id="pb-LRE" onclick="applyPreset('LRE')"  style="background:#2a1808">LRE</button>
+      <button class="pb" id="pb-LDS" onclick="applyPreset('LDS')"  style="background:#082a1a">LDS</button>
+      <button class="pb" id="pb-LRD" onclick="applyPreset('LRD')"  style="background:#08082a">LRD</button>
+      <button class="pb" id="pb-LGR" onclick="applyPreset('LGR')"  style="background:#0a2a08">LGR</button>
+      <button class="pb" id="pb-CRGB" onclick="applyPreset('CRGB')" style="background:#1a1a08">CRGB</button>
+      <button class="pb" id="pb-CLAB" onclick="applyPreset('CLAB')" style="background:#08181a">CLAB</button>
     </div>
   </div>
 
-  <div class="canvas-panel">
-    <canvas id="outCanvas"></canvas>
-    <button class="btn-action btn-primary" onclick="downloadImg()">⬇️ تحميل وتنزيل النتيجة</button>
+  <!-- PCA CONTROLS -->
+  <div class="sec">
+    <div class="st">③ ضبط Decorrelation Stretch</div>
+    <div class="sr">
+      <div class="sl"><span>قوة التمديد σ</span><span class="sv" id="vs">2.5</span></div>
+      <input type="range" id="ss" min=".5" max="8" step=".1" value="2.5"
+             oninput="upd('vs',this.value,1);rp()">
+    </div>
+    <div class="sr">
+      <div class="sl"><span>مقطع الهستوغرام %</span><span class="sv" id="vp">2</span></div>
+      <input type="range" id="sp" min="0" max="10" step=".5" value="2"
+             oninput="upd('vp',this.value,1);rp()">
+    </div>
+    <div class="sr">
+      <div class="sl"><span>تشبّع إضافي</span><span class="sv" id="vsat">1.0</span></div>
+      <input type="range" id="ssat" min=".5" max="4" step=".05" value="1.0"
+             oninput="upd('vsat',this.value,2);rp()">
+    </div>
+    <div class="sr">
+      <div class="sl"><span>سطوع</span><span class="sv" id="vbri">1.0</span></div>
+      <input type="range" id="sbri" min=".3" max="2.5" step=".05" value="1.0"
+             oninput="upd('vbri',this.value,2);rp()">
+    </div>
+    <div class="sr">
+      <div class="sl"><span>حدة الحواف</span><span class="sv" id="vshp">0.0</span></div>
+      <input type="range" id="sshp" min="0" max="5" step=".1" value="0"
+             oninput="upd('vshp',this.value,1);rp()">
+    </div>
+  </div>
+
+  <!-- COVARIANCE MATRIX DISPLAY -->
+  <div class="sec">
+    <div class="st">④ مصفوفة التباين المشترك</div>
+    <div class="cov-box" id="covbox">— أدخل صورة لحساب المصفوفة —</div>
+  </div>
+
+  <div>
+    <button class="btn bdl" onclick="dlRes()">⬇ تحميل PNG</button>
+    <button class="btn brst" onclick="resetAll()">↺ إعادة تعيين</button>
+  </div>
+
+</div><!-- /sb -->
+
+<!-- CANVAS AREA -->
+<div class="ca">
+  <input type="file" id="fi" accept="image/*" onchange="loadImg(event)">
+  <div class="dz" id="dz"
+    onclick="document.getElementById('fi').click()"
+    ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
+    ondragleave="this.style.borderColor='var(--border)'"
+    ondrop="onDrop(event)">
+    <div style="font-size:2.2rem;margin-bottom:.5rem">🪨</div>
+    <div style="color:var(--dim);font-size:.85rem">اسحب صورة الرسوم الصخرية أو انقر للاختيار</div>
+    <div style="font-size:.68rem;color:var(--accent);margin-top:.3rem">JPG · PNG</div>
+  </div>
+  <div class="canvases" id="cvs">
+    <div class="cp">
+      <div class="cl"><span>الأصلية</span></div>
+      <canvas id="orig"></canvas>
+    </div>
+    <div class="cp">
+      <div class="cl">
+        <span>Decorrelation Stretch — PCA</span>
+        <span class="an" id="fname"></span>
+      </div>
+      <canvas id="out"></canvas>
+    </div>
+  </div>
+  <div class="stat" id="stat" style="display:none">
+    <span>الفلتر: <b id="stf">—</b></span>
+    <span>الفضاء: <b id="stcs">—</b></span>
+    <span>الأبعاد: <b id="std">—</b></span>
+    <span>الوقت: <b id="stt">—</b></span>
   </div>
 </div>
+</div><!-- /layout -->
+
 <script>
-let imgElement = new Image();
-let curFilter = 'none';
+// ════════════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════════════
+let imgData=null, W=0, H=0;
+let colorSpace='rgb';
+let curPreset='YRE';
 
-document.getElementById('fileInput').onchange = function(e) {
-  if (e.target.files && e.target.files[0]) {
-    document.getElementById('statusText').textContent = "جاري معالجة الصورة...";
-    let reader = new FileReader();
-    reader.onload = function(event) {
-      imgElement.src = event.target.result;
+// DStretch preset definitions:
+// Each preset specifies which color space and how to arrange PCA components
+const PRESETS = {
+  YRE:  {cs:'ycbcr', desc:'يُبرز الأحمر/الأوكر — مثالي لأصباغ الهيماتيت',       accent:'#c8601a'},
+  YRD:  {cs:'ycbcr', desc:'يُبرز الأزرق/البرد — مثالي للمنغنيز والفحم',          accent:'#1a60c8'},
+  YBK:  {cs:'ycbcr', desc:'يعكس اللمعان — الرسوم تصبح فاتحة على خلفية داكنة',   accent:'#cc2200'},
+  LRE:  {cs:'lab',   desc:'Lab مع تضخيم قناة a (أحمر) — حساس جداً للأوكر',      accent:'#b87030'},
+  LDS:  {cs:'lab',   desc:'تمديد Lab كامل — يكشف جميع طبقات الأصباغ',            accent:'#30789c'},
+  LRD:  {cs:'lab',   desc:'Lab مع تضخيم قناة b (أصفر-أزرق)',                    accent:'#3040b8'},
+  LGR:  {cs:'lab',   desc:'Lab مع تضخيم a باتجاه الأخضر — للأصباغ النباتية',    accent:'#30a050'},
+  CRGB: {cs:'rgb',   desc:'PCA مباشر على RGB — تمديد ترابط كامل',               accent:'#a09030'},
+  CLAB: {cs:'lab',   desc:'PCA على Lab كامل — أدق فلتر لكشف الأصباغ الخفية',    accent:'#3090a0'},
+};
+
+// ════════════════════════════════════════════════════════════
+//  UI HELPERS
+// ════════════════════════════════════════════════════════════
+function upd(id,v,d){document.getElementById(id).textContent=parseFloat(v).toFixed(d);}
+function gv(id){return parseFloat(document.getElementById(id).value);}
+function rp(){if(imgData)run();}
+
+function setCS(cs){
+  colorSpace=cs;
+  document.querySelectorAll('.cst').forEach(t=>t.classList.remove('on'));
+  document.getElementById('cs-'+cs).classList.add('on');
+  const info={
+    rgb:'PCA مباشرة على RGB — مطابق لـ CRGB في DStretch الأصلي.',
+    ycbcr:'PCA على YCbCr — يفصل اللمعان عن اللون، مثالي للأصباغ الدافئة.',
+    lab:'PCA على فضاء Lab الإدراكي — أكثر دقةً في كشف تدرجات الأصباغ الخفيفة.'
+  };
+  document.getElementById('cs-info').textContent=info[cs];
+  rp();
+}
+
+function applyPreset(name){
+  curPreset=name;
+  const p=PRESETS[name];
+  // switch color space to preset's native space
+  colorSpace=p.cs;
+  document.querySelectorAll('.cst').forEach(t=>t.classList.remove('on'));
+  document.getElementById('cs-'+p.cs).classList.add('on');
+  document.getElementById('cs-info').textContent=p.desc;
+  // highlight button
+  document.querySelectorAll('.pb').forEach(b=>{
+    b.classList.remove('on');
+    b.style.color='var(--text)';
+    b.style.borderColor='var(--border)';
+  });
+  const btn=document.getElementById('pb-'+name);
+  btn.classList.add('on');
+  btn.style.borderColor=p.accent;
+  btn.style.color='#fff';
+  document.getElementById('fname').textContent=name;
+  document.getElementById('stf').textContent=name;
+  rp();
+}
+
+// ════════════════════════════════════════════════════════════
+//  IMAGE LOAD
+// ════════════════════════════════════════════════════════════
+function onDrop(e){
+  e.preventDefault();
+  document.getElementById('dz').style.borderColor='var(--border)';
+  const f=e.dataTransfer.files[0];
+  if(f&&f.type.startsWith('image/'))loadFile(f);
+}
+function loadImg(e){loadFile(e.target.files[0]);}
+function loadFile(file){
+  const rd=new FileReader();
+  rd.onload=e=>{
+    const img=new Image();
+    img.onload=()=>{
+      W=img.width; H=img.height;
+      const oc=document.getElementById('orig');
+      oc.width=W; oc.height=H;
+      oc.getContext('2d').drawImage(img,0,0);
+      imgData=oc.getContext('2d').getImageData(0,0,W,H);
+      document.getElementById('out').width=W;
+      document.getElementById('out').height=H;
+      document.getElementById('dz').style.display='none';
+      document.getElementById('cvs').style.display='grid';
+      document.getElementById('stat').style.display='flex';
+      document.getElementById('std').textContent=W+'×'+H;
+      document.getElementById('stcs').textContent=colorSpace.toUpperCase();
+      applyPreset('YRE'); // default
     };
-    reader.readAsDataURL(e.target.files[0]);
-  }
-};
-
-imgElement.onload = function() {
-  document.getElementById('statusText').textContent = "تمت إضافة الصورة بنجاح ✅";
-  reapply();
-};
-
-function setFilter(name, btn) {
-  curFilter = name;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  reapply();
+    img.src=e.target.result;
+  };
+  rd.readAsDataURL(file);
 }
 
-function reapply() {
-  if (!imgElement.src) return;
-  let canvas = document.getElementById('outCanvas');
-  let ctx = canvas.getContext('2d');
-  
-  // حل مشكلة الأندرويد: تصغير الحجم البرمجي لـ 500 بكسل لتفادي الـ Crash والشاشة السوداء
-  let maxDim = 500; 
-  let w = imgElement.width, h = imgElement.height;
-  if (w > maxDim || h > maxDim) {
-    if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; } 
-    else { w = Math.round((w * maxDim) / h); h = maxDim; }
+// ════════════════════════════════════════════════════════════
+//  MAIN PIPELINE
+// ════════════════════════════════════════════════════════════
+function run(){
+  const t0=performance.now();
+  const src=imgData.data;
+  const n=W*H;
+  const stretchSigma=gv('ss');
+  const clipPct=gv('sp');
+  const satBoost=gv('ssat');
+  const briBoost=gv('sbri');
+  const sharpStr=gv('sshp');
+  const preset=curPreset;
+
+  // ── STEP 1: Convert pixels to working color space ────────
+  // pixels[i] = [c1,c2,c3]  all in roughly [0,1] range
+  const pixels=new Float32Array(n*3);
+  for(let i=0;i<n;i++){
+    const r=src[i*4]/255, g=src[i*4+1]/255, b=src[i*4+2]/255;
+    const [c1,c2,c3]=toWorkSpace(r,g,b,colorSpace,preset);
+    pixels[i*3]=c1; pixels[i*3+1]=c2; pixels[i*3+2]=c3;
   }
-  
-  canvas.width = w; canvas.height = h;
-  ctx.drawImage(imgElement, 0, 0, w, h);
-  
-  let imgData = ctx.getImageData(0, 0, w, h);
-  let src = imgData.data, n = src.length;
-  let dst = new Uint8ClampedArray(n);
-  let stretch = parseFloat(document.getElementById('sl-stretch').value);
-  let brightness = parseFloat(document.getElementById('sl-brightness').value);
 
-  let stats = {r:0, g:0, b:0};
-  for(let i=0; i<n; i+=4) { stats.r += src[i]; stats.g += src[i+1]; stats.b += src[i+2]; }
-  let count = n/4, avg = {r: stats.r/count, g: stats.g/count, b: stats.b/count};
+  // ── STEP 2: Compute mean ──────────────────────────────────
+  let m0=0,m1=0,m2=0;
+  for(let i=0;i<n;i++){m0+=pixels[i*3];m1+=pixels[i*3+1];m2+=pixels[i*3+2];}
+  m0/=n; m1/=n; m2/=n;
 
-  for(let i=0; i<n; i+=4) {
-    let r = src[i], g = src[i+1], b = src[i+2];
-    let nr = r, ng = g, nb = b;
-    if (curFilter === 'lgr') { nr = b * 1.6 - r * 0.6; ng = r * 1.6 - g * 0.6; nb = g * 1.6 - b * 0.6; } 
-    else if (curFilter === 'lrd') { nr = r * 2.0 - g * 0.7 - b * 0.3; ng = g; nb = b; } 
-    else if (curFilter === 'lre') { nr = r * 1.6 - g * 0.6; ng = g * 1.4 - r * 0.4; nb = b; } 
-    else if (curFilter === 'yrd') { nr = r * 1.7 - g * 0.5 - b * 0.2; ng = -r * 0.1 + g * 1.3; nb = b * 1.4; } 
-    else if (curFilter === 'yre') { nr = r * 1.4 - b * 0.4; ng = g * 1.4 - b * 0.4; nb = b * 0.8; } 
-    else if (curFilter === 'lds') { nr = r * 1.5; ng = g * 0.8; nb = b * 0.5; } 
-    else if (curFilter === 'ycbcr') { let cr = 0.5 * r - 0.418 * g - 0.081 * b + 128; nr = cr; ng = cr; nb = cr; }
-
-    dst[i]   = Math.min(255, Math.max(0, ((nr - avg.r) * stretch + avg.r) * brightness));
-    dst[i+1] = Math.min(255, Math.max(0, ((ng - avg.g) * stretch + avg.g) * brightness));
-    dst[i+2] = Math.min(255, Math.max(0, ((nb - avg.b) * stretch + avg.b) * brightness));
-    dst[i+3] = 255;
+  // ── STEP 3: Covariance Matrix (3×3) ──────────────────────
+  let c00=0,c01=0,c02=0,c11=0,c12=0,c22=0;
+  for(let i=0;i<n;i++){
+    const d0=pixels[i*3]-m0, d1=pixels[i*3+1]-m1, d2=pixels[i*3+2]-m2;
+    c00+=d0*d0; c01+=d0*d1; c02+=d0*d2;
+    c11+=d1*d1; c12+=d1*d2;
+    c22+=d2*d2;
   }
-  ctx.putImageData(new ImageData(dst, w, h), 0, 0);
+  c00/=n;c01/=n;c02/=n;c11/=n;c12/=n;c22/=n;
+
+  // Display covariance matrix
+  displayCov([[c00,c01,c02],[c01,c11,c12],[c02,c12,c22]]);
+
+  // ── STEP 4: PCA — Jacobi eigendecomposition ──────────────
+  // Returns eigenvectors (columns) and eigenvalues
+  const {vecs,vals}=jacobi3([[c00,c01,c02],[c01,c11,c12],[c02,c12,c22]]);
+
+  // Sort by eigenvalue descending (PC1 = most variance)
+  const order=[0,1,2].sort((a,b)=>vals[b]-vals[a]);
+  const sortedVecs=order.map(i=>vecs[i]);
+  const sortedVals=order.map(i=>vals[i]);
+
+  // ── STEP 5: Project pixels onto principal components ──────
+  const proj=new Float32Array(n*3);
+  for(let i=0;i<n;i++){
+    const d0=pixels[i*3]-m0, d1=pixels[i*3+1]-m1, d2=pixels[i*3+2]-m2;
+    for(let k=0;k<3;k++){
+      proj[i*3+k]=sortedVecs[k][0]*d0+sortedVecs[k][1]*d1+sortedVecs[k][2]*d2;
+    }
+  }
+
+  // ── STEP 6: Decorrelation Stretch ─────────────────────────
+  // For each PC: stretch to equal variance (σ * stretchSigma)
+  // This is the EXACT DStretch algorithm
+  const stretched=new Float32Array(n*3);
+  for(let k=0;k<3;k++){
+    const sigma=Math.sqrt(Math.max(sortedVals[k],1e-10));
+    const target=stretchSigma; // target std dev in output
+
+    // Also clip histogram
+    const col=[];
+    for(let i=0;i<n;i++) col.push(proj[i*3+k]);
+    col.sort((a,b)=>a-b);
+    const loClip=col[Math.floor(n*clipPct/100)];
+    const hiClip=col[Math.floor(n*(1-clipPct/100))];
+
+    for(let i=0;i<n;i++){
+      // Scale: normalize by sigma, then scale to target
+      let v=(proj[i*3+k]/sigma)*target;
+      // Clip
+      v=Math.max((loClip/sigma)*target, Math.min((hiClip/sigma)*target, v));
+      stretched[i*3+k]=v;
+    }
+  }
+
+  // ── STEP 7: Apply preset-specific channel reordering ──────
+  // DStretch presets differ in HOW they map PCs back to RGB
+  const reordered=new Float32Array(n*3);
+  applyPresetReorder(stretched,reordered,n,preset,sortedVals);
+
+  // ── STEP 8: Back-project to color space, then to RGB ──────
+  const outRGB=new Float32Array(n*3);
+  for(let i=0;i<n;i++){
+    const pc0=reordered[i*3], pc1=reordered[i*3+1], pc2=reordered[i*3+2];
+    // Inverse PCA: back to working color space
+    const c0=sortedVecs[0][0]*pc0+sortedVecs[1][0]*pc1+sortedVecs[2][0]*pc2+m0;
+    const c1=sortedVecs[0][1]*pc0+sortedVecs[1][1]*pc1+sortedVecs[2][1]*pc2+m1;
+    const c2=sortedVecs[0][2]*pc0+sortedVecs[1][2]*pc1+sortedVecs[2][2]*pc2+m2;
+    // Convert back to RGB
+    const [r,g,b]=fromWorkSpace(c0,c1,c2,colorSpace,preset);
+    outRGB[i*3]=r; outRGB[i*3+1]=g; outRGB[i*3+2]=b;
+  }
+
+  // ── STEP 9: Histogram stretch to [0,1] ───────────────────
+  let rMin=Inf,rMax=-Inf,gMin=Inf,gMax=-Inf,bMin=Inf,bMax=-Inf;
+  for(let i=0;i<n;i++){
+    if(outRGB[i*3]<rMin)rMin=outRGB[i*3];if(outRGB[i*3]>rMax)rMax=outRGB[i*3];
+    if(outRGB[i*3+1]<gMin)gMin=outRGB[i*3+1];if(outRGB[i*3+1]>gMax)gMax=outRGB[i*3+1];
+    if(outRGB[i*3+2]<bMin)bMin=outRGB[i*3+2];if(outRGB[i*3+2]>bMax)bMax=outRGB[i*3+2];
+  }
+  const Inf=1e30;
+  const rR=Math.max(rMax-rMin,1e-6),gR=Math.max(gMax-gMin,1e-6),bR=Math.max(bMax-bMin,1e-6);
+
+  // ── STEP 10: Compose final image ─────────────────────────
+  const out=new Uint8ClampedArray(n*4);
+  for(let i=0;i<n;i++){
+    let r=(outRGB[i*3]-rMin)/rR;
+    let g=(outRGB[i*3+1]-gMin)/gR;
+    let b=(outRGB[i*3+2]-bMin)/bR;
+
+    // Saturation boost
+    if(satBoost!==1){
+      const l=.299*r+.587*g+.114*b;
+      r=l+(r-l)*satBoost; g=l+(g-l)*satBoost; b=l+(b-l)*satBoost;
+    }
+    // Brightness
+    r*=briBoost; g*=briBoost; b*=briBoost;
+
+    out[i*4]=cl(r*255); out[i*4+1]=cl(g*255);
+    out[i*4+2]=cl(b*255); out[i*4+3]=255;
+  }
+
+  let id=new ImageData(out,W,H);
+  if(sharpStr>0) id=unsharp(id,sharpStr);
+
+  document.getElementById('out').getContext('2d').putImageData(id,0,0);
+  document.getElementById('stt').textContent=(performance.now()-t0).toFixed(0)+' ms';
+  document.getElementById('stcs').textContent=colorSpace.toUpperCase();
 }
 
-function downloadImg() {
-  let canvas = document.getElementById('outCanvas');
-  let link = document.createElement('a'); 
-  link.download = 'dstretch_result.png';
-  link.href = canvas.toDataURL('image/png'); 
-  link.click();
+// ════════════════════════════════════════════════════════════
+//  PRESET CHANNEL REORDERING
+//  Each DStretch preset reorders/weights the PCs differently
+//  to emphasize specific pigment types
+// ════════════════════════════════════════════════════════════
+function applyPresetReorder(src,dst,n,preset,vals){
+  for(let i=0;i<n;i++){
+    const p0=src[i*3], p1=src[i*3+1], p2=src[i*3+2];
+    let o0,o1,o2;
+    switch(preset){
+      case 'YRE':
+        // Boost PC1 (red/warm variance), normal PC0, reduce PC2
+        o0=p0; o1=p1*1.4; o2=p2*.7; break;
+      case 'YRD':
+        // Boost PC2 (cool/blue variance)
+        o0=p0; o1=p1*.7; o2=p2*1.4; break;
+      case 'YBK':
+        // Invert PC0 (luminance inversion)
+        o0=-p0; o1=p1*1.2; o2=p2*1.2; break;
+      case 'LRE':
+        // In Lab space: boost a-channel PC
+        o0=p0; o1=p1*1.6; o2=p2*.6; break;
+      case 'LDS':
+        // Balanced Lab stretch
+        o0=p0; o1=p1; o2=p2; break;
+      case 'LRD':
+        // Swap PC1 and PC2 to emphasize b-channel
+        o0=p0; o1=p2*1.3; o2=p1*.8; break;
+      case 'LGR':
+        // Negate a-channel PC (green emphasis)
+        o0=p0; o1=-p1*1.3; o2=p2; break;
+      case 'CRGB':
+        // Pure PCA, equal weights
+        o0=p0; o1=p1; o2=p2; break;
+      case 'CLAB':
+        // Pure PCA on Lab, equal weights
+        o0=p0; o1=p1; o2=p2; break;
+      default:
+        o0=p0; o1=p1; o2=p2;
+    }
+    dst[i*3]=o0; dst[i*3+1]=o1; dst[i*3+2]=o2;
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+//  COLOR SPACE CONVERSIONS
+// ════════════════════════════════════════════════════════════
+function toWorkSpace(r,g,b,cs,preset){
+  if(cs==='ycbcr'){
+    const Y=.299*r+.587*g+.114*b;
+    const Cb=-.1687*r-.3313*g+.5*b+.5;
+    const Cr=.5*r-.4187*g-.0813*b+.5;
+    return[Y,Cr,Cb];
+  }
+  if(cs==='lab'){
+    const[L,A,B]=rgbLab(r,g,b);
+    return[L/100,(A+128)/256,(B+128)/256];
+  }
+  return[r,g,b]; // RGB
+}
+
+function fromWorkSpace(c0,c1,c2,cs,preset){
+  if(cs==='ycbcr'){
+    const Y=c0,Cr=c1,Cb=c2;
+    return[Y+1.402*(Cr-.5), Y-.3441*(Cb-.5)-.7141*(Cr-.5), Y+1.772*(Cb-.5)];
+  }
+  if(cs==='lab'){
+    const L=c0*100,A=c1*256-128,B=c2*256-128;
+    return labRgb(L,A,B);
+  }
+  return[c0,c1,c2];
+}
+
+// ════════════════════════════════════════════════════════════
+//  JACOBI EIGENDECOMPOSITION (symmetric 3×3)
+//  Returns eigenvectors as rows, eigenvalues
+// ════════════════════════════════════════════════════════════
+function jacobi3(M){
+  // Copy matrix
+  let A=[[M[0][0],M[0][1],M[0][2]],
+         [M[1][0],M[1][1],M[1][2]],
+         [M[2][0],M[2][1],M[2][2]]];
+  // Identity for eigenvectors
+  let V=[[1,0,0],[0,1,0],[0,0,1]];
+
+  for(let iter=0;iter<100;iter++){
+    // Find largest off-diagonal element
+    let p=0,q=1,maxVal=Math.abs(A[0][1]);
+    if(Math.abs(A[0][2])>maxVal){maxVal=Math.abs(A[0][2]);p=0;q=2;}
+    if(Math.abs(A[1][2])>maxVal){maxVal=Math.abs(A[1][2]);p=1;q=2;}
+    if(maxVal<1e-12)break;
+
+    // Compute rotation angle
+    const theta=.5*Math.atan2(2*A[p][q],A[q][q]-A[p][p]);
+    const c=Math.cos(theta),s=Math.sin(theta);
+
+    // Apply Jacobi rotation
+    const Anew=A.map(r=>[...r]);
+    Anew[p][p]=c*c*A[p][p]-2*s*c*A[p][q]+s*s*A[q][q];
+    Anew[q][q]=s*s*A[p][p]+2*s*c*A[p][q]+c*c*A[q][q];
+    Anew[p][q]=Anew[q][p]=0;
+    for(let r=0;r<3;r++){
+      if(r!==p&&r!==q){
+        Anew[r][p]=Anew[p][r]=c*A[r][p]-s*A[r][q];
+        Anew[r][q]=Anew[q][r]=s*A[r][p]+c*A[r][q];
+      }
+    }
+    A=Anew;
+
+    // Update eigenvectors
+    const Vnew=V.map(r=>[...r]);
+    for(let r=0;r<3;r++){
+      Vnew[r][p]=c*V[r][p]-s*V[r][q];
+      Vnew[r][q]=s*V[r][p]+c*V[r][q];
+    }
+    V=Vnew;
+  }
+
+  // Extract eigenvalues and eigenvectors
+  const vals=[A[0][0],A[1][1],A[2][2]];
+  // V columns are eigenvectors → extract as rows for easy indexing
+  const vecs=[
+    [V[0][0],V[1][0],V[2][0]],
+    [V[0][1],V[1][1],V[2][1]],
+    [V[0][2],V[1][2],V[2][2]],
+  ];
+  return{vecs,vals};
+}
+
+// ════════════════════════════════════════════════════════════
+//  DISPLAY COVARIANCE MATRIX
+// ════════════════════════════════════════════════════════════
+function displayCov(cov){
+  const names=colorSpace==='ycbcr'?['Y ','Cr','Cb']:
+               colorSpace==='lab' ?['L ','a ','b ']:['R ','G ','B '];
+  let txt='      '+names.join('        ')+'\n';
+  for(let i=0;i<3;i++){
+    txt+=names[i]+' ';
+    for(let j=0;j<3;j++){
+      txt+=cov[i][j].toFixed(5).padStart(10);
+    }
+    txt+='\n';
+  }
+  document.getElementById('covbox').textContent=txt;
+}
+
+// ════════════════════════════════════════════════════════════
+//  LAB / RGB MATH
+// ════════════════════════════════════════════════════════════
+function rgbLab(r,g,b){
+  const rl=ln(r),gl=ln(g),bl=ln(b);
+  const X=.4124*rl+.3576*gl+.1805*bl;
+  const Y=.2126*rl+.7152*gl+.0722*bl;
+  const Z=.0193*rl+.1192*gl+.9505*bl;
+  return[116*fl(Y)-16, 500*(fl(X/.9505)-fl(Y)), 200*(fl(Y)-fl(Z/1.089))];
+}
+function labRgb(L,A,B){
+  const fy=(L+16)/116,fx=A/500+fy,fz=fy-B/200;
+  const X=.9505*fi(fx),Y=fi(fy),Z=1.089*fi(fz);
+  return[dl(3.2406*X-1.5372*Y-.4986*Z),
+         dl(-.9689*X+1.8758*Y+.0415*Z),
+         dl(.0557*X-.2040*Y+1.0570*Z)];
+}
+function fl(t){return t>.008856?Math.cbrt(t):7.787*t+16/116;}
+function fi(t){return t>.206897?t**3:(t-16/116)/7.787;}
+function ln(c){return c<=.04045?c/12.92:((c+.055)/1.055)**2.4;}
+function dl(c){return Math.max(0,c<=.0031308?12.92*c:1.055*c**(1/2.4)-.055);}
+function cl(v){return Math.max(0,Math.min(255,Math.round(v)));}
+
+// ════════════════════════════════════════════════════════════
+//  UNSHARP MASK
+// ════════════════════════════════════════════════════════════
+function unsharp(id,str){
+  const s=id.data,n=W*H;
+  const k=[.0625,.25,.375,.25,.0625],kr=2;
+  function blur1(ch){
+    const t=new Float32Array(n),o=new Float32Array(n);
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+      let v=0;for(let i=-kr;i<=kr;i++)v+=s[(y*W+Math.max(0,Math.min(W-1,x+i)))*4+ch]*k[i+kr];
+      t[y*W+x]=v;
+    }
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+      let v=0;for(let i=-kr;i<=kr;i++)v+=t[Math.max(0,Math.min(H-1,y+i))*W+x]*k[i+kr];
+      o[y*W+x]=v;
+    }
+    return o;
+  }
+  const bR=blur1(0),bG=blur1(1),bB=blur1(2);
+  const o=new Uint8ClampedArray(s.length);
+  for(let i=0;i<n;i++){
+    o[i*4]=cl(s[i*4]+str*(s[i*4]-bR[i]));
+    o[i*4+1]=cl(s[i*4+1]+str*(s[i*4+1]-bG[i]));
+    o[i*4+2]=cl(s[i*4+2]+str*(s[i*4+2]-bB[i]));
+    o[i*4+3]=s[i*4+3];
+  }
+  return new ImageData(o,W,H);
+}
+
+function dlRes(){
+  const a=document.createElement('a');
+  a.download='dstretch_pca_'+curPreset+'.png';
+  a.href=document.getElementById('out').toDataURL('image/png');
+  a.click();
+}
+
+function resetAll(){
+  [['ss','vs',2.5,1],['sp','vp',2,1],['ssat','vsat',1,2],
+   ['sbri','vbri',1,2],['sshp','vshp',0,1]].forEach(([s,v,d,dc])=>{
+    document.getElementById(s).value=d;upd(v,d,dc);
+  });
+  rp();
 }
 </script>
 </body>
 </html>
+HTMLEOF
+echo "done"
