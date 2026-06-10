@@ -3,229 +3,583 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DStretch Pro - محسّن الرسوم الصخرية</title>
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#12151a">
+<title>DStretch Pro v3</title>
 <style>
-  @import url('https://googleapis.com');
-
-  :root {
-    --bg: #0a0c0f;
-    --surface: #12151a;
-    --surface2: #1a1f28;
-    --border: #2a3040;
-    --accent: #c8a84b;
-    --text: #e8e2d4;
-    --text-dim: #8a8070;
+  @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap');
+  :root{
+    --bg:#0a0c0f;--surface:#12151a;--surface2:#1c2028;--border:#252b38;
+    --accent:#c8a84b;--text:#e8e2d4;--text-dim:#7a7468;
   }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Cairo',sans-serif;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Cairo', sans-serif;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
+  header{
+    padding:.7rem 1.5rem;border-bottom:1px solid var(--border);
+    background:var(--surface);display:flex;align-items:center;gap:10px;flex-shrink:0;
   }
-
-  header {
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid var(--border);
-    background: var(--surface);
-    text-align: center;
+  .logo{font-size:1.2rem;font-weight:700;color:var(--accent);letter-spacing:2px;}
+  .badge{background:linear-gradient(135deg,#c8a84b,#e8c870);color:#000;font-size:.55rem;font-weight:800;padding:2px 6px;border-radius:3px;letter-spacing:1px;}
+  .hdr-sub{font-size:.7rem;color:var(--text-dim);margin-right:auto;}
+  .btn-save-app{
+    background:linear-gradient(135deg,#2a7a4b,#3aaa6b);color:#fff;
+    border:none;border-radius:6px;padding:.4rem .9rem;
+    font-family:'Cairo',sans-serif;font-size:.75rem;font-weight:700;
+    cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .2s;
   }
+  .btn-save-app:hover{background:linear-gradient(135deg,#3aaa6b,#4bcc80);}
 
-  .logo { font-size: 1.4rem; font-weight: 700; color: var(--accent); letter-spacing: 2px; }
-  .subtitle { font-size: 0.8rem; color: var(--text-dim); }
+  .layout{display:grid;grid-template-columns:270px 1fr;flex:1;min-height:0;overflow:hidden;}
 
-  .main { padding: 15px; display: flex; flex-direction: column; gap: 15px; flex: 1; }
-
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 15px; }
-  .section-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 0.3rem; margin-bottom: 0.8rem; text-align: right; }
-
-  .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-  .filter-btn {
-    padding: 0.7rem;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--text);
-    font-family: 'Cairo', sans-serif;
-    font-size: 0.85rem;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-weight: 600;
+  .sidebar{
+    background:var(--surface);border-left:1px solid var(--border);
+    display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;
+    padding:.8rem;gap:.9rem;
   }
-  .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .filter-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+  .sec-title{
+    font-size:.6rem;text-transform:uppercase;letter-spacing:2px;
+    padding-bottom:.35rem;border-bottom:1px solid var(--border);
+    margin-bottom:.5rem;display:flex;align-items:center;gap:5px;
+  }
+  .dot{width:7px;height:7px;border-radius:50%;display:inline-block;}
 
-  .slider-group { margin-bottom: 0.8rem; }
-  .slider-label { display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-dim); margin-bottom: 4px; }
-  .slider-val { color: var(--accent); font-weight: 600; }
+  .preset-grid{display:grid;grid-template-columns:1fr 1fr;gap:.35rem;}
+  .preset-btn{
+    padding:.55rem .4rem;border-radius:6px;border:1px solid var(--border);
+    background:var(--surface2);cursor:pointer;font-family:'Cairo',sans-serif;
+    font-size:.72rem;font-weight:600;color:var(--text);
+    display:flex;flex-direction:column;align-items:center;gap:3px;transition:all .15s;
+  }
+  .preset-btn .swatch{width:100%;height:14px;border-radius:3px;margin-bottom:2px;}
+  .preset-btn:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.4);}
+  .preset-btn.active{border-width:2px;}
 
-  input[type=range] { width: 100%; -webkit-appearance: none; height: 6px; background: var(--border); border-radius: 3px; outline: none; }
-  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--accent); cursor: pointer; }
+  .sl-row{margin-bottom:.6rem;}
+  .sl-lbl{display:flex;justify-content:space-between;font-size:.72rem;color:var(--text-dim);margin-bottom:3px;}
+  .sl-val{color:var(--accent);font-weight:700;}
+  input[type=range]{width:100%;-webkit-appearance:none;height:3px;background:var(--border);border-radius:2px;outline:none;cursor:pointer;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--accent);cursor:pointer;}
 
-  .btn-action { width: 100%; padding: 0.8rem; border: none; border-radius: 8px; font-family: 'Cairo', sans-serif; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: all 0.2s; margin-top: 5px; }
-  .btn-primary { background: var(--accent); color: #000; }
+  .btn{width:100%;padding:.6rem;border:none;border-radius:6px;font-family:'Cairo',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;transition:all .2s;}
+  .btn-dl{background:var(--accent);color:#000;}
+  .btn-dl:hover{background:#d9b95c;}
+  .btn-rst{background:var(--surface2);color:var(--text);border:1px solid var(--border);margin-top:.3rem;}
+  .btn-rst:hover{border-color:var(--accent);}
+  .btn-save{background:linear-gradient(135deg,#2a7a4b,#3aaa6b);color:#fff;margin-top:.3rem;}
+  .btn-save:hover{background:linear-gradient(135deg,#3aaa6b,#4bcc80);}
 
-  .upload-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 1.5rem; text-align: center; cursor: pointer; background: var(--surface); margin-bottom: 5px; }
-  .upload-icon { font-size: 2rem; margin-bottom: 0.3rem; }
-  
-  .canvas-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-top: 10px; }
-  .canvas-label { padding: 0.5rem 1rem; font-size: 0.8rem; color: var(--text-dim); border-bottom: 1px solid var(--border); text-align: right; }
-  canvas { display: block; width: 100%; max-height: 350px; object-fit: contain; background: #000; }
-  #fileInput { display: none; }
+  .canvas-area{display:flex;flex-direction:column;padding:.8rem;gap:.7rem;overflow:hidden;}
+
+  .drop-zone{
+    flex:1;border:2px dashed var(--border);border-radius:10px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    cursor:pointer;transition:all .3s;background:var(--surface);min-height:200px;
+  }
+  .drop-zone:hover{border-color:var(--accent);background:var(--surface2);}
+  .dz-icon{font-size:2.2rem;margin-bottom:.5rem;}
+  .dz-text{color:var(--text-dim);font-size:.85rem;}
+  .dz-hint{font-size:.68rem;color:var(--accent);margin-top:.3rem;}
+
+  .canvases{display:none;grid-template-columns:1fr 1fr;gap:.7rem;flex:1;min-height:0;}
+  .cpanel{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;display:flex;flex-direction:column;min-height:0;}
+  .clabel{padding:.4rem .7rem;font-size:.65rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;flex-shrink:0;}
+  .clabel span.active-name{color:var(--accent);font-weight:700;}
+  canvas{display:block;width:100%;flex:1;min-height:0;object-fit:contain;}
+
+  .status{
+    padding:.35rem .7rem;background:var(--surface);border:1px solid var(--border);
+    border-radius:5px;font-size:.65rem;color:var(--text-dim);
+    display:flex;gap:1.2rem;flex-shrink:0;flex-wrap:wrap;
+  }
+  .status b{color:var(--accent);}
+  #fileInput{display:none;}
+  .desc{font-size:.65rem;color:var(--text-dim);line-height:1.6;padding:.4rem .5rem;background:var(--surface2);border-radius:5px;border:1px solid var(--border);}
+
+  /* Modal */
+  .modal-overlay{
+    display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);
+    z-index:1000;align-items:center;justify-content:center;
+  }
+  .modal-overlay.show{display:flex;}
+  .modal{
+    background:var(--surface);border:1px solid var(--border);border-radius:12px;
+    padding:1.5rem;max-width:400px;width:90%;text-align:center;
+  }
+  .modal h3{color:var(--accent);margin-bottom:.8rem;font-size:1rem;}
+  .modal p{font-size:.75rem;color:var(--text-dim);line-height:1.8;margin-bottom:1rem;}
+  .modal .steps{text-align:right;background:var(--surface2);border-radius:8px;padding:.8rem;margin-bottom:1rem;}
+  .modal .steps div{font-size:.72rem;color:var(--text);padding:.2rem 0;border-bottom:1px solid var(--border);}
+  .modal .steps div:last-child{border:none;}
+  .modal .steps span{color:var(--accent);font-weight:700;margin-left:.5rem;}
+  .modal-btns{display:flex;gap:.5rem;justify-content:center;}
+  .modal-btn{padding:.5rem 1.2rem;border-radius:6px;border:none;font-family:'Cairo',sans-serif;font-size:.8rem;font-weight:700;cursor:pointer;}
+  .modal-btn-ok{background:var(--accent);color:#000;}
+  .modal-btn-cancel{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
 </style>
 </head>
 <body>
 
 <header>
-  <div class="logo">⬡ DStretch Pro</div>
-  <div class="subtitle">محسّن الرسوم الصخرية — تقنية تمديد التباين اللوني</div>
+  <div class="logo">⬡ DStretch</div>
+  <span class="badge">PRO v3</span>
+  <div class="hdr-sub">محسّن الرسوم الصخرية — فلاتر متخصصة</div>
+  <button class="btn-save-app" onclick="showSaveModal()">💾 حفظ التطبيق</button>
 </header>
 
-<div class="main">
-  <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
-    <div class="upload-icon">📁</div>
-    <div class="drop-zone-text" id="statusText">اضغط هنا لاختيار صورة من الاستوديو أو الكاميرا</div>
-  </div>
-  <!-- تعديل مهم لقبول الكاميرا والملفات في الأندرويد بسلاسة -->
-  <input type="file" id="fileInput" accept="image/*">
-
-  <div class="card">
-    <div class="section-title">قنوات DStretch</div>
-    <div class="filter-grid">
-      <button class="filter-btn active" onclick="setFilter('none', this)">الأصلي</button>
-      <button class="filter-btn" onclick="setFilter('lgr', this)">LGR (أزرق/أحمر)</button>
-      <button class="filter-btn" onclick="setFilter('lrd', this)">LRD (باهت)</button>
-      <button class="filter-btn" onclick="setFilter('lre', this)">LRE (مغرة)</button>
-      <button class="filter-btn" onclick="setFilter('yrd', this)">YRD (أحمر Pro)</button>
-      <button class="filter-btn" onclick="setFilter('yre', this)">YRE (أصفر Pro)</button>
-      <button class="filter-btn" onclick="setFilter('lds', this)">LDS (حاد)</button>
-      <button class="filter-btn" onclick="setFilter('ycbcr', this)">YCbCr Cr</button>
+<div class="layout">
+<div class="sidebar">
+  <div>
+    <div class="sec-title"><span class="dot" style="background:#c8a84b"></span> فلاتر سريعة — Presets</div>
+    <div class="preset-grid">
+      <button class="preset-btn" id="pre-ycr" onclick="loadPreset('ycbcr_cr')">
+        <div class="swatch" style="background:linear-gradient(90deg,#8B3A3A,#D4A06A)"></div>
+        YCbCr Cr<span style="font-size:.6rem;color:var(--text-dim)">أوكر / أحمر</span>
+      </button>
+      <button class="preset-btn" id="pre-ybk" onclick="loadPreset('ybk')">
+        <div class="swatch" style="background:linear-gradient(90deg,#cc1a00,#ff5533)"></div>
+        YBK<span style="font-size:.6rem;color:var(--text-dim)">أحمر حاد</span>
+      </button>
+      <button class="preset-btn" id="pre-ybk2" onclick="loadPreset('ybk2')">
+        <div class="swatch" style="background:linear-gradient(90deg,#8b0000,#cc0000)"></div>
+        YBK Deep<span style="font-size:.6rem;color:var(--text-dim)">أحمر داكن</span>
+      </button>
+      <button class="preset-btn" id="pre-gold" onclick="loadPreset('gold')">
+        <div class="swatch" style="background:linear-gradient(90deg,#b8860b,#ffd700)"></div>
+        Gold LDS<span style="font-size:.6rem;color:var(--text-dim)">ذهبي / أصفر</span>
+      </button>
+      <button class="preset-btn" id="pre-lds" onclick="loadPreset('lds')">
+        <div class="swatch" style="background:linear-gradient(90deg,#5c7a9c,#a0c4d8)"></div>
+        LDS Lab<span style="font-size:.6rem;color:var(--text-dim)">Lab كامل</span>
+      </button>
+      <button class="preset-btn" id="pre-lre" onclick="loadPreset('lre')">
+        <div class="swatch" style="background:linear-gradient(90deg,#7a5c2e,#d4a96a)"></div>
+        LRE<span style="font-size:.6rem;color:var(--text-dim)">دافئ معزّز</span>
+      </button>
+      <button class="preset-btn" id="pre-lgr" onclick="loadPreset('lgr')">
+        <div class="swatch" style="background:linear-gradient(90deg,#2e7a5c,#6ad4a0)"></div>
+        LGR<span style="font-size:.6rem;color:var(--text-dim)">أخضر/فحم</span>
+      </button>
+      <button class="preset-btn" id="pre-lrd" onclick="loadPreset('lrd')">
+        <div class="swatch" style="background:linear-gradient(90deg,#3a3a8b,#6a7ad4)"></div>
+        LRD<span style="font-size:.6rem;color:var(--text-dim)">أزرق/طين</span>
+      </button>
+      <button class="preset-btn" id="pre-heq" onclick="loadPreset('heq')">
+        <div class="swatch" style="background:linear-gradient(90deg,#444,#bbb)"></div>
+        HEQ<span style="font-size:.6rem;color:var(--text-dim)">تسوية كاملة</span>
+      </button>
+      <button class="preset-btn" id="pre-ret" onclick="loadPreset('retinex')">
+        <div class="swatch" style="background:linear-gradient(90deg,#2a2a2a,#888,#ddd)"></div>
+        Retinex<span style="font-size:.6rem;color:var(--text-dim)">تطبيع محلي</span>
+      </button>
+      <button class="preset-btn" id="pre-deca" onclick="loadPreset('deca')">
+        <div class="swatch" style="background:linear-gradient(90deg,#6b3fa0,#c084d4)"></div>
+        DECA<span style="font-size:.6rem;color:var(--text-dim)">فصل طبقات</span>
+      </button>
+      <button class="preset-btn" id="pre-edge" onclick="loadPreset('edge')">
+        <div class="swatch" style="background:linear-gradient(90deg,#111,#c8a84b)"></div>
+        Edge+<span style="font-size:.6rem;color:var(--text-dim)">حواف ذهبية</span>
+      </button>
     </div>
   </div>
 
-  <div class="card">
-    <div class="section-title">إعدادات التحسين</div>
-    <div class="slider-group">
-      <div class="slider-label"><span>قوة التمديد</span><span class="slider-val" id="val-stretch">2.0</span></div>
-      <input type="range" id="sl-stretch" min="1" max="5" step="0.1" value="2.0" oninput="document.getElementById('val-stretch').textContent=this.value; reapply()">
+  <div>
+    <div class="sec-title"><span class="dot" style="background:#7eb8c9"></span> ضبط دقيق</div>
+    <div class="sl-row">
+      <div class="sl-lbl"><span>قوة التمديد</span><span class="sl-val" id="v-str">4.0</span></div>
+      <input type="range" id="s-str" min="1" max="10" step=".1" value="4" oninput="sv('v-str',this.value,1);rp()">
     </div>
-    <div class="slider-group">
-      <div class="slider-label"><span>السطوع</span><span class="slider-val" id="val-brightness">1.00</span></div>
-      <input type="range" id="sl-brightness" min="0.5" max="2" step="0.05" value="1.00" oninput="document.getElementById('val-brightness').textContent=parseFloat(this.value).toFixed(2); reapply()">
+    <div class="sl-row">
+      <div class="sl-lbl"><span>السطوع</span><span class="sl-val" id="v-bri">1.0</span></div>
+      <input type="range" id="s-bri" min=".3" max="3" step=".05" value="1" oninput="sv('v-bri',this.value,2);rp()">
     </div>
-    <div class="slider-group">
-      <div class="slider-label"><span>التباين</span><span class="slider-val" id="val-contrast">1.00</span></div>
-      <input type="range" id="sl-contrast" min="0.5" max="2" step="0.05" value="1.00" oninput="document.getElementById('val-contrast').textContent=parseFloat(this.value).toFixed(2); reapply()">
+    <div class="sl-row">
+      <div class="sl-lbl"><span>التباين</span><span class="sl-val" id="v-con">1.2</span></div>
+      <input type="range" id="s-con" min=".3" max="5" step=".05" value="1.2" oninput="sv('v-con',this.value,2);rp()">
     </div>
-    <div class="slider-group">
-      <div class="slider-label"><span>حدة الحواف</span><span class="slider-val" id="val-sharp">1.0</span></div>
-      <input type="range" id="sl-sharp" min="1" max="3" step="0.1" value="1.0" oninput="document.getElementById('val-sharp').textContent=this.value; reapply()">
+    <div class="sl-row">
+      <div class="sl-lbl"><span>تشبّع اللون</span><span class="sl-val" id="v-sat">1.0</span></div>
+      <input type="range" id="s-sat" min="0" max="4" step=".05" value="1" oninput="sv('v-sat',this.value,2);rp()">
+    </div>
+    <div class="sl-row">
+      <div class="sl-lbl"><span>حدة الحواف</span><span class="sl-val" id="v-shp">0.0</span></div>
+      <input type="range" id="s-shp" min="0" max="6" step=".1" value="0" oninput="sv('v-shp',this.value,1);rp()">
+    </div>
+    <div class="sl-row">
+      <div class="sl-lbl"><span>نطاق % (percentile)</span><span class="sl-val" id="v-pct">1.0</span></div>
+      <input type="range" id="s-pct" min="0" max="10" step=".5" value="1" oninput="sv('v-pct',this.value,1);rp()">
     </div>
   </div>
 
-  <div class="canvas-panel">
-    <div class="canvas-label">النتيجة المعالجة بدستريتش:</div>
-    <canvas id="outCanvas"></canvas>
-    <button class="btn-action btn-primary" onclick="downloadImg()">⬇️ تحميل وتنزيل النتيجة</button>
+  <div id="desc-box" class="desc">اختر فلتراً لرؤية وصفه</div>
+
+  <div>
+    <button class="btn btn-dl" onclick="dlResult()">⬇ تحميل الصورة PNG</button>
+    <button class="btn btn-save" onclick="saveApp()">💾 تحميل التطبيق HTML</button>
+    <button class="btn btn-rst" onclick="resetAll()">↺ إعادة تعيين</button>
+  </div>
+</div>
+
+<div class="canvas-area">
+  <input type="file" id="fileInput" accept="image/*" onchange="loadImg(event)">
+  <div class="drop-zone" id="dz"
+    onclick="document.getElementById('fileInput').click()"
+    ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
+    ondragleave="this.style.borderColor='var(--border)'"
+    ondrop="onDrop(event)">
+    <div class="dz-icon">🪨</div>
+    <div class="dz-text">اسحب صورة الرسوم الصخرية أو انقر للاختيار</div>
+    <div class="dz-hint">JPG · PNG مدعومة — يعمل بالكامل بدون إنترنت بعد الحفظ</div>
+  </div>
+
+  <div class="canvases" id="cvs">
+    <div class="cpanel">
+      <div class="clabel"><span>الأصلية</span></div>
+      <canvas id="orig"></canvas>
+    </div>
+    <div class="cpanel">
+      <div class="clabel"><span>بعد DStretch Pro</span><span class="active-name" id="fname"></span></div>
+      <canvas id="out"></canvas>
+    </div>
+  </div>
+
+  <div class="status" id="stat" style="display:none">
+    <span>الفلتر: <b id="st-f">—</b></span>
+    <span>الأبعاد: <b id="st-d">—</b></span>
+    <span>وقت المعالجة: <b id="st-t">—</b></span>
+    <span style="margin-right:auto;color:#3aaa6b">✅ يعمل بدون إنترنت</span>
+  </div>
+</div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3>💾 حفظ التطبيق على جهازك</h3>
+    <p>احفظ التطبيق كاملاً ملف HTML واحد يعمل بدون إنترنت على أي جهاز</p>
+    <div class="steps">
+      <div><span>1️⃣</span> انقر "تحميل" أدناه</div>
+      <div><span>2️⃣</span> افتح الملف dstretch_pro.html بأي متصفح</div>
+      <div><span>3️⃣</span> استخدمه بدون إنترنت كاملاً ✅</div>
+      <div><span>📱</span> يعمل على موبايل وكمبيوتر</div>
+    </div>
+    <div class="modal-btns">
+      <button class="modal-btn modal-btn-ok" onclick="saveApp();closeModal()">⬇ تحميل الآن</button>
+      <button class="modal-btn modal-btn-cancel" onclick="closeModal()">إلغاء</button>
+    </div>
   </div>
 </div>
 
 <script>
-let imgElement = new Image();
-let curFilter = 'none';
+let imgData=null,W=0,H=0,curPreset=null;
 
-document.getElementById('fileInput').onchange = function(e) {
-  if (e.target.files && e.target.files[0]) {
-    document.getElementById('statusText').textContent = "جاري تحميل الصورة...";
-    let file = e.target.files[0];
-    let reader = new FileReader();
-    
-    reader.onload = function(event) {
-      imgElement.src = event.target.result;
+const PRESETS={
+  'ycbcr_cr':{label:'YCbCr Cr',desc:'يُبرز الأوكر والأحمر — مثالي للأصباغ الحمراء على صخر بيج.',color:'#c8a84b'},
+  'ybk':{label:'YBK — أحمر حاد',desc:'يعكس قناة اللمعان Y مع تضخيم Cr — ينتج خلفية حمراء مع أشكال فاتحة.',color:'#cc1a00'},
+  'ybk2':{label:'YBK Deep',desc:'نسخة أعمق من YBK بتمديد أقوى — للرسوم الشديدة الخفوت.',color:'#8b0000'},
+  'gold':{label:'Gold LDS',desc:'يُحوّل الصخر لدرجات ذهبية/صفراء مع إبراز التفاصيل الداكنة.',color:'#b8860b'},
+  'lds':{label:'LDS Lab',desc:'تمديد كامل لفضاء Lab — يُبرز كل طبقات الأصباغ الدافئة والباردة.',color:'#5c7a9c'},
+  'lre':{label:'LRE',desc:'Lab مع تعزيز قناة a (أحمر-أخضر) — جيد للهيماتيت والحمرة.',color:'#7a5c2e'},
+  'lgr':{label:'LGR',desc:'Lab مع تعزيز قناة b (أصفر-أزرق) — يُبرز الفحم والمنغنيز.',color:'#2e7a5c'},
+  'lrd':{label:'LRD',desc:'Lab مع تبديل الأولويات نحو الأزرق — يُفرّق بين طبقات الطين والحجر.',color:'#3a3a8b'},
+  'heq':{label:'HEQ',desc:'موازنة الهستوغرام الكاملة — يُوزّع التباين بالتساوي على الصورة.',color:'#666'},
+  'retinex':{label:'Retinex',desc:'تطبيع الإضاءة المحلية — يُزيل الظل غير المتجانس ويكشف التفاصيل.',color:'#556'},
+  'deca':{label:'DECA',desc:'تمييز طبقات متداخلة بتوليف Lab+YCbCr — يُفصل الرسوم المتراكبة.',color:'#6b3fa0'},
+  'edge':{label:'Edge+',desc:'يُبرز حواف الرسوم بتلوين الغراديان بالذهبي — مفيد لتحديد الخطوط.',color:'#c8a84b'},
+};
+
+function sv(id,v,d){document.getElementById(id).textContent=parseFloat(v).toFixed(d);}
+function g(id){return parseFloat(document.getElementById(id).value);}
+function rp(){if(curPreset)run(curPreset);}
+function cl(v){return Math.max(0,Math.min(255,Math.round(v)));}
+
+function onDrop(e){
+  e.preventDefault();
+  document.getElementById('dz').style.borderColor='var(--border)';
+  const f=e.dataTransfer.files[0];
+  if(f&&f.type.startsWith('image/'))loadFile(f);
+}
+function loadImg(e){loadFile(e.target.files[0]);}
+function loadFile(file){
+  const r=new FileReader();
+  r.onload=e=>{
+    const img=new Image();
+    img.onload=()=>{
+      W=img.width;H=img.height;
+      const oc=document.getElementById('orig');
+      oc.width=W;oc.height=H;
+      oc.getContext('2d').drawImage(img,0,0);
+      imgData=oc.getContext('2d').getImageData(0,0,W,H);
+      document.getElementById('out').width=W;
+      document.getElementById('out').height=H;
+      document.getElementById('dz').style.display='none';
+      document.getElementById('cvs').style.display='grid';
+      document.getElementById('stat').style.display='flex';
+      document.getElementById('st-d').textContent=W+' × '+H;
+      if(!curPreset)loadPreset('ybk');
+      else run(curPreset);
     };
-    reader.readAsDataURL(file);
-  }
-};
-
-imgElement.onload = function() {
-  document.getElementById('statusText').textContent = "تمت إضافة الصورة بنجاح ✅";
-  reapply();
-};
-
-function setFilter(name, btn) {
-  curFilter = name;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  reapply();
+    img.src=e.target.result;
+  };
+  r.readAsDataURL(file);
 }
 
-function reapply() {
-  if (!imgElement.src) return;
-  let canvas = document.getElementById('outCanvas');
-  let ctx = canvas.getContext('2d');
-  
-  // تصغير الحجم البرمجي لـ 600 بكسل لتفادي أي ثقل أو كراش في نظام الأندرويد
-  let maxDim = 600; 
-  let w = imgElement.width, h = imgElement.height;
-  if (w > maxDim || h > maxDim) {
-    if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; } else { w = Math.round((w * maxDim) / h); h = maxDim; }
+function loadPreset(name){
+  document.querySelectorAll('.preset-btn').forEach(b=>{
+    b.classList.remove('active');
+    b.style.borderColor='';b.style.background='';
+  });
+  const btn=document.getElementById('pre-'+name);
+  if(btn){
+    btn.classList.add('active');
+    btn.style.borderColor=PRESETS[name].color;
+    btn.style.background=PRESETS[name].color+'22';
   }
-  
-  canvas.width = w; canvas.height = h;
-  ctx.clearRect(0, 0, w, h);
-  ctx.drawImage(imgElement, 0, 0, w, h);
-  
-  try {
-    let imgData = ctx.getImageData(0, 0, w, h);
-    let src = imgData.data, n = src.length;
-    let dst = new Uint8ClampedArray(n);
-    
-    let stretch = parseFloat(document.getElementById('sl-stretch').value);
-    let brightness = parseFloat(document.getElementById('sl-brightness').value);
-    let contrast = parseFloat(document.getElementById('sl-contrast').value);
-    let sharp = parseFloat(document.getElementById('sl-sharp').value);
+  const p=PRESETS[name];
+  document.getElementById('desc-box').textContent=p.desc;
+  document.getElementById('fname').textContent=p.label;
+  document.getElementById('st-f').textContent=p.label;
+  curPreset=name;
+  run(name);
+}
 
-    let stats = {r:0, g:0, b:0};
-    for(let i=0; i<n; i+=4) { stats.r += src[i]; stats.g += src[i+1]; stats.b += src[i+2]; }
-    let count = n/4, avg = {r: stats.r/count, g: stats.g/count, b: stats.b/count};
+function run(name){
+  if(!imgData)return;
+  const t0=performance.now();
+  const src=new Uint8ClampedArray(imgData.data);
+  const n=W*H;
+  const str=g('s-str'),bri=g('s-bri'),con=g('s-con'),sat=g('s-sat');
+  const shp=g('s-shp'),pct=g('s-pct');
+  let out;
+  if(name==='retinex')out=doRetinex(src,n,con,bri,sat);
+  else if(name==='heq')out=doHEQ(src,n,sat,con,bri);
+  else if(name==='edge')out=doEdge(src,n);
+  else out=doPipeline(name,src,n,str,bri,con,sat,pct);
+  let id=new ImageData(out,W,H);
+  if(shp>0)id=doUnsharp(id,shp);
+  document.getElementById('out').getContext('2d').putImageData(id,0,0);
+  document.getElementById('st-t').textContent=(performance.now()-t0).toFixed(0)+' ms';
+}
 
-    for(let i=0; i<n; i+=4) {
-      let r = src[i], g = src[i+1], b = src[i+2];
-      let nr = r, ng = g, nb = b;
+function doPipeline(name,src,n,str,bri,con,sat,pct){
+  const c1=new Float32Array(n),c2=new Float32Array(n),c3=new Float32Array(n);
+  for(let i=0;i<n;i++){
+    const r=src[i*4]/255,gg=src[i*4+1]/255,b=src[i*4+2]/255;
+    const v=toCS(name,r,gg,b);
+    c1[i]=v[0];c2[i]=v[1];c3[i]=v[2];
+  }
+  stretchCh(c1,str,pct);stretchCh(c2,str,pct);stretchCh(c3,str,pct);
+  const out=new Uint8ClampedArray(n*4);
+  for(let i=0;i<n;i++){
+    let[r,gg,b]=fromCS(name,c1[i],c2[i],c3[i]);
+    if(sat!==1){const l=0.299*r+0.587*gg+0.114*b;r=l+(r-l)*sat;gg=l+(gg-l)*sat;b=l+(b-l)*sat;}
+    r=((r-.5)*con+.5)*bri;gg=((gg-.5)*con+.5)*bri;b=((b-.5)*con+.5)*bri;
+    out[i*4]=cl(r*255);out[i*4+1]=cl(gg*255);out[i*4+2]=cl(b*255);out[i*4+3]=src[i*4+3];
+  }
+  return out;
+}
 
-      if (curFilter === 'lgr') {
-        nr = b * 1.6 - r * 0.6; ng = r * 1.6 - g * 0.6; nb = g * 1.6 - b * 0.6;
-      } else if (curFilter === 'lrd') {
-        nr = r * 2.0 - g * 0.7 - b * 0.3; ng = g; nb = b;
-      } else if (curFilter === 'lre') {
-        nr = r * 1.6 - g * 0.6; ng = g * 1.4 - r * 0.4; nb = b;
-      } else if (curFilter === 'yrd') {
-        nr = r * 1.7 - g * 0.5 - b * 0.2; ng = -r * 0.1 + g * 1.3; nb = b * 1.4;
-      } else if (curFilter === 'yre') {
-        nr = r * 1.4 - b * 0.4; ng = g * 1.4 - b * 0.4; nb = b * 0.8;
-      } else if (curFilter === 'lds') {
-        nr = r * 1.5; ng = g * 0.8; nb = b * 0.5;
-      } else if (curFilter === 'ycbcr') {
-        let cr = 0.5 * r - 0.418 * g - 0.081 * b + 128;
-        nr = cr; ng = cr; nb = cr;
-      }
+function stretchCh(ch,str,pct){
+  const n=ch.length;
+  const sorted=[...ch].sort((a,b)=>a-b);
+  const lo=sorted[Math.floor(pct/100*n)]??sorted[0];
+  const hi=sorted[Math.floor((1-pct/100)*n)-1]??sorted[n-1];
+  const range=hi-lo||1;
+  const mid=(lo+hi)/2;
+  for(let i=0;i<n;i++)ch[i]=((ch[i]-mid)/range)*str*0.5+0.5;
+}
 
-      let finalR = ((nr - avg.r) * stretch + avg.r) * brightness;
-      let finalG = ((ng - avg.g) * stretch + avg.g) * brightness;
-      let finalB = ((nb - avg.b) * stretch + avg.b) * brightness;
+function toCS(name,r,gg,b){
+  const Y=.299*r+.587*gg+.114*b;
+  const Cb=-.1687*r-.3313*gg+.5*b+.5;
+  const Cr=.5*r-.4187*gg-.0813*b+.5;
+  if(name==='ycbcr_cr')return[Y,Cr,Cb];
+  if(name==='ybk')return[1-Y,Cr,Cb];
+  if(name==='ybk2')return[1-Y,Cr*1.2,Cb*.8];
+  if(name==='gold'){const[L,A,B2]=rgbLab(r,gg,b);return[(B2+128)/256,L/100,(A+128)/256];}
+  if(['lds','lre','lgr','lrd','deca'].includes(name)){
+    const[L,A,B2]=rgbLab(r,gg,b);
+    if(name==='lds')return[L/100,(A+128)/256,(B2+128)/256];
+    if(name==='lre')return[L/100,(A*1.5+128)/256,(B2+128)/256];
+    if(name==='lgr')return[(A+128)/256,L/100,(B2+128)/256];
+    if(name==='lrd')return[(B2+128)/256,(A+128)/256,L/100];
+    if(name==='deca'){const ax=(A+128)/256*.7+Cr*.3;return[L/100,ax,(B2+128)/256];}
+  }
+  return[r,gg,b];
+}
 
-      finalR = (finalR - 128) * contrast + 128;
-      finalG = (finalG - 128) * contrast + 128;
-      finalB = (finalB - 128) * contrast + 128;
+function fromCS(name,c1,c2,c3){
+  if(name==='ycbcr_cr')return ycbcrRGB(c1,c2,c3);
+  if(name==='ybk')return ycbcrRGB(1-c1,c2,c3);
+  if(name==='ybk2')return ycbcrRGB(1-c1,c2/1.2,c3/.8);
+  if(name==='gold'){const B2=c1*256-128,L=c2*100,A=c3*256-128;return labRGB(L,A,B2);}
+  if(name==='lds')return labRGB(c1*100,c2*256-128,c3*256-128);
+  if(name==='lre')return labRGB(c1*100,(c2*256-128)/1.5,c3*256-128);
+  if(name==='lgr')return labRGB(c2*100,c1*256-128,c3*256-128);
+  if(name==='lrd')return labRGB(c3*100,c2*256-128,c1*256-128);
+  if(name==='deca')return labRGB(c1*100,c2*256-128,c3*256-128);
+  return[c1,c2,c3];
+}
 
-      dst[i]   = Math.min(255, Math.max(0, finalR * sharp));
-      dst[i+1] = Math.min(255, Math.max(0, finalG * sharp));
-      dst[i+2] = Math.min(255, Math.max(0, finalB * sharp));
-      dst[i+3] = 255;
+function ycbcrRGB(Y,Cr,Cb){
+  return[Y+1.402*(Cr-.5),Y-.344136*(Cb-.5)-.714136*(Cr-.5),Y+1.772*(Cb-.5)];
+}
+
+function rgbLab(r,gg,b){
+  function lin(v){return v>0.04045?Math.pow((v+0.055)/1.055,2.4):v/12.92;}
+  const R=lin(r),G=lin(gg),B=lin(b);
+  const X=(R*0.4124564+G*0.3575761+B*0.1804375)/0.95047;
+  const Y=(R*0.2126729+G*0.7151522+B*0.0721750)/1.00000;
+  const Z=(R*0.0193339+G*0.1191920+B*0.9503041)/1.08883;
+  function f(t){return t>0.008856?Math.pow(t,1/3):7.787*t+16/116;}
+  const fx=f(X),fy=f(Y),fz=f(Z);
+  return[116*fy-16,500*(fx-fy),200*(fy-fz)];
+}
+
+function labRGB(L,A,B2){
+  const fy=(L+16)/116,fx=A/500+fy,fz=fy-B2/200;
+  function fi(t){return t>0.206897?t*t*t:(t-16/116)/7.787;}
+  const X=fi(fx)*0.95047,Y=fi(fy)*1.00000,Z=fi(fz)*1.08883;
+  let r=X*3.2404542-Y*1.5371385-Z*0.4985314;
+  let gg=-X*0.9692660+Y*1.8760108+Z*0.0415560;
+  let b=X*0.0556434-Y*0.2040259+Z*1.0572252;
+  function gam(v){return v>0.0031308?1.055*Math.pow(Math.max(0,v),1/2.4)-0.055:12.92*v;}
+  return[gam(r),gam(gg),gam(b)];
+}
+
+function gblurCh(src,ch,radius){
+  const w=W,h=H,sigma=radius/2,ksize=radius*2+1;
+  const kernel=new Float32Array(ksize);
+  let ksum=0;
+  for(let i=0;i<ksize;i++){const x=i-radius;kernel[i]=Math.exp(-x*x/(2*sigma*sigma));ksum+=kernel[i];}
+  for(let i=0;i<ksize;i++)kernel[i]/=ksum;
+  const tmp=new Float32Array(w*h),out=new Float32Array(w*h);
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+    let s=0;
+    for(let k=0;k<ksize;k++){const xx=Math.min(w-1,Math.max(0,x+k-radius));s+=src[(y*w+xx)*4+ch]*kernel[k];}
+    tmp[y*w+x]=s;
+  }
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+    let s=0;
+    for(let k=0;k<ksize;k++){const yy=Math.min(h-1,Math.max(0,y+k-radius));s+=tmp[yy*w+x]*kernel[k];}
+    out[y*w+x]=s;
+  }
+  return out;
+}
+
+function doRetinex(src,n,con,bri,sat){
+  const out=new Uint8ClampedArray(n*4);
+  const bR=gblurCh(src,0,15),bG=gblurCh(src,1,15),bB=gblurCh(src,2,15);
+  for(let i=0;i<n;i++){
+    let r=(Math.log(src[i*4]+1)-Math.log(bR[i]+1)+5)/10;
+    let gg=(Math.log(src[i*4+1]+1)-Math.log(bG[i]+1)+5)/10;
+    let b=(Math.log(src[i*4+2]+1)-Math.log(bB[i]+1)+5)/10;
+    if(sat!==1){const l=.299*r+.587*gg+.114*b;r=l+(r-l)*sat;gg=l+(gg-l)*sat;b=l+(b-l)*sat;}
+    r=((r-.5)*con+.5)*bri;gg=((gg-.5)*con+.5)*bri;b=((b-.5)*con+.5)*bri;
+    out[i*4]=cl(r*255);out[i*4+1]=cl(gg*255);out[i*4+2]=cl(b*255);out[i*4+3]=src[i*4+3];
+  }
+  return out;
+}
+
+function doHEQ(src,n,sat,con,bri){
+  const out=new Uint8ClampedArray(n*4);
+  const lut=[];
+  for(let c=0;c<3;c++){
+    const h=new Array(256).fill(0);
+    for(let i=0;i<n;i++)h[src[i*4+c]]++;
+    const cdf=new Array(256);cdf[0]=h[0];
+    for(let j=1;j<256;j++)cdf[j]=cdf[j-1]+h[j];
+    const cdfMin=cdf.find(v=>v>0)||0;
+    const lutC=new Uint8Array(256);
+    for(let j=0;j<256;j++)lutC[j]=Math.round((cdf[j]-cdfMin)/(n-cdfMin)*255);
+    lut.push(lutC);
+  }
+  for(let i=0;i<n;i++){
+    let r=lut[0][src[i*4]]/255,gg=lut[1][src[i*4+1]]/255,b=lut[2][src[i*4+2]]/255;
+    if(sat!==1){const l=.299*r+.587*gg+.114*b;r=l+(r-l)*sat;gg=l+(gg-l)*sat;b=l+(b-l)*sat;}
+    r=((r-.5)*con+.5)*bri;gg=((gg-.5)*con+.5)*bri;b=((b-.5)*con+.5)*bri;
+    out[i*4]=cl(r*255);out[i*4+1]=cl(gg*255);out[i*4+2]=cl(b*255);out[i*4+3]=src[i*4+3];
+  }
+  return out;
+}
+
+function doEdge(src,n){
+  const out=new Uint8ClampedArray(n*4);
+  const w=W,h=H;
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+    const i=y*w+x;
+    function px(dx,dy){
+      const nx=Math.min(w-1,Math.max(0,x+dx)),ny=Math.min(h-1,Math.max(0,y+dy));
+      const ii=(ny*w+nx)*4;return(src[ii]+src[ii+1]+src[ii+2])/3;
     }
+    const gx=(px(1,-1)+2*px(1,0)+px(1,1))-(px(-1,-1)+2*px(-1,0)+px(-1,1));
+    const gy=(px(-1,1)+2*px(0,1)+px(1,1))-(px(-1,-1)+2*px(0,-1)+px(1,-1));
+    const mag=Math.min(255,Math.sqrt(gx*gx+gy*gy));
+    const t=mag/255;
+    out[i*4]=cl(t*200);out[i*4+1]=cl(t*168);out[i*4+2]=cl(t*75);out[i*4+3]=src[i*4+3];
+  }
+  return out;
+}
+
+function doUnsharp(imgDataIn,amount){
+  const src=imgDataIn.data,n=W*H;
+  const blurSrc=new Uint8ClampedArray(src);
+  const bR=gblurCh(blurSrc,0,2),bG=gblurCh(blurSrc,1,2),bB=gblurCh(blurSrc,2,2);
+  const out=new Uint8ClampedArray(n*4);
+  for(let i=0;i<n;i++){
+    out[i*4]=cl(src[i*4]+(src[i*4]-bR[i])*amount);
+    out[i*4+1]=cl(src[i*4+1]+(src[i*4+1]-bG[i])*amount);
+    out[i*4+2]=cl(src[i*4+2]+(src[i*4+2]-bB[i])*amount);
+    out[i*4+3]=src[i*4+3];
+  }
+  return new ImageData(out,W,H);
+}
+
+function dlResult(){
+  if(!imgData)return;
+  const c=document.getElementById('out');
+  const a=document.createElement('a');
+  a.href=c.toDataURL('image/png');
+  a.download='dstretch_'+(curPreset||'output')+'.png';
+  a.click();
+}
+
+function resetAll(){
+  imgData=null;W=0;H=0;curPreset=null;
+  document.getElementById('dz').style.display='flex';
+  document.getElementById('cvs').style.display='none';
+  document.getElementById('stat').style.display='none';
+  document.getElementById('fileInput').value='';
+  document.getElementById('desc-box').textContent='اختر فلتراً لرؤية وصفه';
+  document.getElementById('fname').textContent='';
+  document.getElementById('st-f').textContent='—';
+  document.getElementById('st-d').textContent='—';
+  document.getElementById('st-t').textContent='—';
+  document.getElementById('s-str').value=4;sv('v-str',4,1);
+  document.getElementById('s-bri').value=1;sv('v-bri',1,2);
+  document.getElementById('s-con').value=1.2;sv('v-con',1.2,2);
+  document.getElementById('s-sat').value=1;sv('v-sat',1,2);
+  document.getElementById('s-shp').value=0;sv('v-shp',0,1);
+  document.getElementById('s-pct').value=1;sv('v-pct',1,1);
+  document.querySelectorAll('.preset-btn').forEach(b=>{
+    b.classList.remove('active');b.style.borderColor='';b.style.background='';
+  });
+}
+
+// ── Save App as HTML file ──────────────────────────────────
+function saveApp(){
+  const html=document.documentElement.outerHTML;
+  const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='dstretch_pro.html';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function showSaveModal(){document.getElementById('modal').classList.add('show');}
+function closeModal(){document.getElementById('modal').classList.remove('show');}
+document.getElementById('modal').addEventListener('click',function(e){
+  if(e.target===this)closeModal();
+});
+</script>
+</body>
+</html>
